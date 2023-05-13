@@ -1,8 +1,12 @@
 import subprocess
 
 import paho.mqtt.client as mqtt
+import secrets
 
-host = 'stereopida.local'
+mqtt_server = secrets.mqtt.host
+mqtt_port = secrets.mqtt.port
+mqtt_user = secrets.mqtt.user
+mqtt_password = secrets.mqtt.password
 
 
 def on_connect(client, userdata, flags, rc):
@@ -27,5 +31,6 @@ def handleMessage(msg):
 client = mqtt.Client(client_id="", clean_session=True, userdata=None, protocol=mqtt.MQTTv31, transport="tcp")
 client.on_connect = on_connect
 client.on_message = on_message
-client.connect(host)
+client.username_pw_set(mqtt_user, mqtt_password)
+client.connect(mqtt_server, mqtt_port)
 client.loop_forever()

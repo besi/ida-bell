@@ -8,7 +8,13 @@ import pigpio
 import paho.mqtt.publish as publish
 import time
 
-mqtt_host = 'localhost'
+import secrets
+
+mqtt_host = secrets.mqtt.host
+mqtt_port = secrets.mqtt.port
+mqtt_user = secrets.mqtt.user
+mqtt_password = secrets.mqtt.password
+
 lastTag = None
 lastTime = 0
 
@@ -37,7 +43,8 @@ while True:
                             lastTag = tag
                             lastTime = time.time()
                             print(tag)
-                            publish.single('services/rfid/tagged/', tag, hostname=mqtt_host)
+                            auth = {'username':mqtt_user, 'password':mqtt_password}
+                            publish.single('services/rfid/tagged/', tag, hostname=mqtt_host, auth=auth)
             time.sleep(.1)
     except KeyboardInterrupt:
         print("\nQuitting...")
