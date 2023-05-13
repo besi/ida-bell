@@ -11,8 +11,8 @@ mqtt_password = secrets.mqtt.password
 
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
-        print("Connected to MQTT server '%s'" % host)
-    client.subscribe("services/rfid/#")
+        print("Connected to MQTT server '%s'" % mqtt_server)
+        client.subscribe("services/rfid/tagged/#")
 
 
 def on_message(client, userdata, msg):
