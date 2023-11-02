@@ -5,6 +5,7 @@ After=network-online.target
 
 [Service]
 User=pi
+WorkingDirectory=/home/pi/ida-bell
 ExecStart=sudo pigpiod && /usr/bin/python3 /home/pi/ida-bell/read-rfid-tags.py 
 
 [Install]
