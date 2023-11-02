@@ -1,0 +1,11 @@
+[Unit]
+Description=Reads RFID tags and publishes them via MQTT
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=pi
+ExecStart=sudo pigpiod && /usr/bin/python3 /home/pi/ida-bell/read-rfid-tags.py 
+
+[Install]
+WantedBy=network-online.target

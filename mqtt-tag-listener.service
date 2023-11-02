@@ -1,0 +1,11 @@
+[Unit]
+Description=Listen on MQTT for RFID Tags
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=pi
+ExecStart=/usr/bin/python3 /home/pi/ida-bell/tag-listener.py 
+
+[Install]
+WantedBy=network-online.target
