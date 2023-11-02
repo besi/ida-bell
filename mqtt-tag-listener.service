@@ -5,6 +5,7 @@ After=network-online.target
 
 [Service]
 User=pi
+WorkingDirectory=/home/pi/ida-bell/
 ExecStart=/usr/bin/python3 /home/pi/ida-bell/tag-listener.py 
 
 [Install]
