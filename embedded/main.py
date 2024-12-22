@@ -78,16 +78,18 @@ def restart_and_reconnect():
   machine.reset()
 
 try:
-  print("connecting to MQTT")
+  print("connecting to MQTT...")
   client = connect_and_subscribe()
   while True:
     client.check_msg()
-    time.sleep(0.25)
+    time.sleep(1)
     client.ping()
 except OSError as e:
     import errno
-    error = errno.errorcode[e.errno]
-    print(f"Error {error}")
+    print(e.errno)
+    
+    if e.errno in errno.errorcode:
+        print(f"Error {errno.errorcode[e.errno]}")        
     restart_and_reconnect()
         
 while True:
