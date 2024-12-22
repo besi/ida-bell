@@ -10,26 +10,25 @@ mode = Pin(0, Pin.IN)
 
 
 clockwise = -1
+dir = clockwise
 
-dir = -clockwise
-
-stepper.step(FULL_ROTATION*0.3, dir)
 start_time = time.time()
 BUTTON_ACTIVE = 0
-while time.time() - start_time < 8:
+i = 0
+print("Grant 3 seconds to change the direction by pressing mode")
+while time.time() - start_time < 3:
     # Rotate in steps
     # Change direction when button is pressed
     stepper.step(FULL_ROTATION/10, dir)
-    #     time.sleep(1)
+    i = i + (FULL_ROTATION/10 * dir)
     if mode() == BUTTON_ACTIVE:
         print("Mode pressed: Change direction")
         dir = dir * -1
         time.sleep(0.4) # debounce
-
-
-
-
-
+print("Remaining steps")
+print(i)
+stepper.step(FULL_ROTATION - abs(i), dir)
+time.sleep(1)
 ## MQTT
 import secrets
 import time
@@ -47,7 +46,7 @@ mqtt_password = secrets.mqtt.password
  
 
 def sub_cb(topic, msg):
-    print((topic, msg))
+    # print((topic, msg))
     if topic == b'timer':
         import json
         timer_data = json.loads(msg)

@@ -1,3 +1,5 @@
-# Idabell
+# Idabell with stepomatic
 
-![](idabell.jpg)
+See <https://ideas.b-labs.ch/stepomatic>
+
+![](../idabell.jpg)
