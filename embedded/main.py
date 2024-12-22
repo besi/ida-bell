@@ -12,23 +12,6 @@ mode = Pin(0, Pin.IN)
 clockwise = -1
 dir = clockwise
 
-start_time = time.time()
-BUTTON_ACTIVE = 0
-i = 0
-print("Grant 3 seconds to change the direction by pressing mode")
-while time.time() - start_time < 3:
-    # Rotate in steps
-    # Change direction when button is pressed
-    stepper.step(FULL_ROTATION/10, dir)
-    i = i + (FULL_ROTATION/10 * dir)
-    if mode() == BUTTON_ACTIVE:
-        print("Mode pressed: Change direction")
-        dir = dir * -1
-        time.sleep(0.4) # debounce
-print("Remaining steps")
-print(i)
-stepper.step(FULL_ROTATION - abs(i), dir)
-time.sleep(1)
 ## MQTT
 import secrets
 import time
@@ -52,6 +35,7 @@ def sub_cb(topic, msg):
         timer_data = None
         try:
             timer_data = json.loads(msg)
+            print(timer_data)
             seconds = int(timer_data['seconds'])
             title = timer_data['title']
             print(f"Start the timer '{title}' with {seconds} seconds")
@@ -59,39 +43,45 @@ def sub_cb(topic, msg):
             time.sleep(seconds)
             print("Ringing the bell")
             stepper.step(FULL_ROTATION, dir)    
+        except KeyError as e:
+            print("Ignoring badly formatted or unknown JSON")
+            pass
         except ValueError as e:
             pass
 
 
 def connect_and_subscribe():
-  global client_id, mqtt_server, topic_sub, mqtt_port, mqtt_user, mqtt_password,sub_cb
-  client = MQTTClient(client_id, mqtt_server, mqtt_port, mqtt_user, mqtt_password,keepalive=60)
-  client.set_callback(sub_cb)
-  print(f"Connection succeeded: {client.connect() == 0}")
-  client.subscribe(topic_sub)
-  print('Connected to %s MQTT broker, subscribed to %s topic' % (mqtt_server, topic_sub))
-  return client
+    global client_id, mqtt_server, topic_sub, mqtt_port, mqtt_user, mqtt_password,sub_cb
+    client = None
+    try:
+      print("connecting to MQTT...")
+      client = MQTTClient(client_id, mqtt_server, mqtt_port, mqtt_user, mqtt_password, keepalive=60)
+      client.set_last_will(topic_pub, '{ "status":"offline"} ', retain=False, qos=0)
+      client.set_callback(sub_cb)
+      client.connect()
+      print(f"Connection succeeded: {client.connect() == 0}")
+      client.subscribe(topic_sub)
+      client.publish(topic_pub, bytes('{"status":"hello"}', 'utf-8'))
+      print('Connected to %s MQTT broker, subscribed to %s topic' % (mqtt_server, topic_sub))
+    except OSError as e:     
+        restart_and_reconnect()
+    return client
+
 
 def restart_and_reconnect():
   print('Failed to connect to MQTT broker. Reconnecting...')
   # TODO attempt to reconnect instead
   machine.reset()
 
-try:
-  print("connecting to MQTT...")
-  client = connect_and_subscribe()
-  while True:
+client = connect_and_subscribe()
+
+
+while True:
     client.check_msg()
     time.sleep(1)
     client.ping()
-except OSError as e:
-    import errno
-    print(e.errno)
-    
-    if e.errno in errno.errorcode:
-        print(f"Error {errno.errorcode[e.errno]}")        
-    restart_and_reconnect()
-        
+
+
 while True:
     
     hour = time.gmtime()[3]
