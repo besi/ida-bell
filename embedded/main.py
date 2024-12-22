@@ -1,32 +1,3 @@
-# ADC
-from machine import Pin
-from machine import ADC
-adc = ADC(0)
-ir = Pin(2,Pin.OUT)
-ir.value(0) # Enable IR diode so that we can receive what is reflected back
-print(f"Distance Sensor: {adc.read()}")
-
-
-# Neopixel does not currently work
-import neopixel
-from machine import Pin
-np = neopixel.NeoPixel(Pin(16),1)
-np.fill((100,100,100))
-np.write()
-
-
-# Read temperature and Humidity
-from machine import Pin, SoftI2C
-from hdc1080 import HDC1080
-
-scl = Pin(5, Pin.IN, Pin.PULL_UP)
-sda = Pin(4, Pin.IN, Pin.PULL_UP)
-i2c = SoftI2C(scl,sda)
-temp = HDC1080(i2c)
-print(f"Temperature {temp.temperature()}°C")
-print(f"Humidity {temp.humidity()}%")
-
-
 # Nod hello
 import machine
 import time
@@ -41,9 +12,6 @@ mode = Pin(0, Pin.IN)
 clockwise = -1
 
 dir = -clockwise
-# Rotate a half rotation into the correct direction
-if adc.read() < 700:
-    dir = clockwise
 
 stepper.step(FULL_ROTATION*0.3, dir)
 start_time = time.time()
@@ -57,6 +25,67 @@ while time.time() - start_time < 8:
         print("Mode pressed: Change direction")
         dir = dir * -1
         time.sleep(0.4) # debounce
+
+
+
+
+
+## MQTT
+import secrets
+import time
+import ubinascii
+from umqttsimple import MQTTClient
+
+client_id = ubinascii.hexlify(machine.unique_id())
+topic_sub = secrets.mqtt.topic
+topic_pub = secrets.mqtt.topic
+mqtt_server = secrets.mqtt.host
+mqtt_port = secrets.mqtt.port
+mqtt_user = secrets.mqtt.user
+mqtt_password = secrets.mqtt.password
+
+ 
+
+def sub_cb(topic, msg):
+    print((topic, msg))
+    if topic == b'timer':
+        import json
+        timer_data = json.loads(msg)
+        seconds = int(timer_data['seconds'])
+        title = timer_data['title']
+        print(f"Start the timer '{title}' with {seconds} seconds")
+
+        time.sleep(seconds)
+        print("Ringing the bell")
+        stepper.step(FULL_ROTATION, dir)
+        
+
+def connect_and_subscribe():
+  global client_id, mqtt_server, topic_sub, mqtt_port, mqtt_user, mqtt_password,sub_cb
+  client = MQTTClient(client_id, mqtt_server, mqtt_port, mqtt_user, mqtt_password,keepalive=60)
+  client.set_callback(sub_cb)
+  print(f"Connecting... {client.connect() == 0}")
+  client.subscribe(topic_sub)
+  print('Connected to %s MQTT broker, subscribed to %s topic' % (mqtt_server, topic_sub))
+  return client
+
+def restart_and_reconnect():
+  print('Failed to connect to MQTT broker. Reconnecting...')
+  # TODO attempt to reconnect instead
+  machine.reset()
+
+try:
+  print("connecting to MQTT")
+  client = connect_and_subscribe()
+  while True:
+    client.check_msg()
+    time.sleep(0.25)
+    client.ping()
+except OSError as e:
+    import errno
+    error = errno.errorcode[e.errno]
+    print(f"Error {error}")
+    restart_and_reconnect()
         
 while True:
     
