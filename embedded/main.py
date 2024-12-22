@@ -49,21 +49,25 @@ def sub_cb(topic, msg):
     # print((topic, msg))
     if topic == b'timer':
         import json
-        timer_data = json.loads(msg)
-        seconds = int(timer_data['seconds'])
-        title = timer_data['title']
-        print(f"Start the timer '{title}' with {seconds} seconds")
+        timer_data = None
+        try:
+            timer_data = json.loads(msg)
+            seconds = int(timer_data['seconds'])
+            title = timer_data['title']
+            print(f"Start the timer '{title}' with {seconds} seconds")
 
-        time.sleep(seconds)
-        print("Ringing the bell")
-        stepper.step(FULL_ROTATION, dir)
-        
+            time.sleep(seconds)
+            print("Ringing the bell")
+            stepper.step(FULL_ROTATION, dir)    
+        except ValueError as e:
+            pass
+
 
 def connect_and_subscribe():
   global client_id, mqtt_server, topic_sub, mqtt_port, mqtt_user, mqtt_password,sub_cb
   client = MQTTClient(client_id, mqtt_server, mqtt_port, mqtt_user, mqtt_password,keepalive=60)
   client.set_callback(sub_cb)
-  print(f"Connecting... {client.connect() == 0}")
+  print(f"Connection succeeded: {client.connect() == 0}")
   client.subscribe(topic_sub)
   print('Connected to %s MQTT broker, subscribed to %s topic' % (mqtt_server, topic_sub))
   return client
