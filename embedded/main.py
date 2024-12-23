@@ -91,13 +91,3 @@ while True:
         print("ping")
         client.ping()
         last_ping = time.time()
-
-while True:
-    
-    hour = time.gmtime()[3]
-    minute = time.gmtime()[4]
-    print(f"It's {hour}:{minute:02d}")
-    if hour == 7 and minute == 33:
-        # Ring the bell at the specific time
-        stepper.step(FULL_ROTATION, dir)
-    time.sleep(30)
