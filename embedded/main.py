@@ -7,10 +7,9 @@ from machine import Pin
 
 stepper = Stepper(HALF_STEP, Pin(13, Pin.OUT), Pin(12, Pin.OUT), Pin(14, Pin.OUT), Pin(15, Pin.OUT), delay=.003 )  
 mode = Pin(0, Pin.IN)
-
+MODE_ACTIVE=0
 
 clockwise = -1
-dir = clockwise
 
 ## MQTT
 import secrets
@@ -18,6 +17,7 @@ import time
 import ubinascii
 from umqttsimple import MQTTClient
 
+client = None
 client_id = ubinascii.hexlify(machine.unique_id())
 topic_sub = secrets.mqtt.topic
 topic_pub = secrets.mqtt.topic
@@ -42,7 +42,7 @@ def sub_cb(topic, msg):
 
             time.sleep(seconds)
             print("Ringing the bell")
-            stepper.step(FULL_ROTATION, dir)    
+            stepper.step(FULL_ROTATION, clockwise)    
         except KeyError as e:
             print("Ignoring badly formatted or unknown JSON")
             print(msg)
@@ -52,8 +52,7 @@ def sub_cb(topic, msg):
 
 
 def connect_and_subscribe():
-    global client_id, mqtt_server, topic_sub, mqtt_port, mqtt_user, mqtt_password,sub_cb
-    client = None
+    global client, client_id, mqtt_server, topic_sub, mqtt_port, mqtt_user, mqtt_password,sub_cb
     try:
       print("connecting to MQTT...")
       client = MQTTClient(client_id, mqtt_server, mqtt_port, mqtt_user, mqtt_password, keepalive=KEEPALIVE)
@@ -66,7 +65,6 @@ def connect_and_subscribe():
       print('Connected to %s MQTT broker, subscribed to %s topic' % (mqtt_server, topic_sub))
     except OSError as e:
         restart_and_reconnect(e)
-    return client
 
 
 def restart_and_reconnect(error):
@@ -74,20 +72,28 @@ def restart_and_reconnect(error):
   # TODO attempt to reconnect instead
   machine.reset()
 
-client = connect_and_subscribe()
+connect_and_subscribe()
 
 last_ping = time.time()
-delay = 1
+delay = .5
 while True:
     try:
         client.check_msg()
     except OSError as e:
         print(f"Erron in main loop: {e} Reconnecting")
         client.set_callback = None
-        client = connect_and_subscribe()
-    time.sleep(delay)
+        client = None
+        print("gc.collect()")
+        import gc
+        gc.collect()
+        connect_and_subscribe()
+    
+    if mode() == MODE_ACTIVE:
+        stepper.step(FULL_ROTATION, clockwise)
     
     if time.time() - last_ping > (KEEPALIVE):
         print("ping")
         client.ping()
         last_ping = time.time()
+
+    time.sleep(delay)
