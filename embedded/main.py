@@ -26,7 +26,7 @@ mqtt_port = secrets.mqtt.port
 mqtt_user = secrets.mqtt.user
 mqtt_password = secrets.mqtt.password
 
- 
+KEEPALIVE = 30 * 60
 
 def sub_cb(topic, msg):
     # print((topic, msg))
@@ -35,7 +35,6 @@ def sub_cb(topic, msg):
         timer_data = None
         try:
             timer_data = json.loads(msg)
-            print(timer_data)
             seconds = int(timer_data['seconds'])
             title = timer_data['title']
             print(f"Start the timer '{title}' with {seconds} seconds")
@@ -45,6 +44,7 @@ def sub_cb(topic, msg):
             stepper.step(FULL_ROTATION, dir)    
         except KeyError as e:
             print("Ignoring badly formatted or unknown JSON")
+            print(msg)
             pass
         except ValueError as e:
             pass
@@ -55,7 +55,7 @@ def connect_and_subscribe():
     client = None
     try:
       print("connecting to MQTT...")
-      client = MQTTClient(client_id, mqtt_server, mqtt_port, mqtt_user, mqtt_password, keepalive=60)
+      client = MQTTClient(client_id, mqtt_server, mqtt_port, mqtt_user, mqtt_password, keepalive=KEEPALIVE)
       client.set_last_will(topic_pub, '{ "status":"offline"} ', retain=False, qos=0)
       client.set_callback(sub_cb)
       client.connect()
@@ -75,12 +75,16 @@ def restart_and_reconnect():
 
 client = connect_and_subscribe()
 
-
+last_ping = time.time()
+delay = 1
 while True:
     client.check_msg()
-    time.sleep(1)
-    client.ping()
-
+    time.sleep(delay)
+    
+    if time.time() - last_ping > (KEEPALIVE):
+        print("ping")
+        client.ping()
+        last_ping = time.time()
 
 while True:
     
