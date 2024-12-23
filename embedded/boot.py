@@ -83,8 +83,8 @@ import gc
 gc.collect()
 
 print(wlan.ifconfig()[0])
-#import webrepl
-#webrepl.start()
+import webrepl
+webrepl.start()
 
 # TODO: is this better?
 # if tmo > 0:
