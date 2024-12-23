@@ -26,7 +26,8 @@ mqtt_port = secrets.mqtt.port
 mqtt_user = secrets.mqtt.user
 mqtt_password = secrets.mqtt.password
 
-KEEPALIVE = 30 * 60
+# TODO: Reduce the Keep alive time once #5 is implemented
+KEEPALIVE = 3 * 60 * 60 # 3 hours
 
 def sub_cb(topic, msg):
     # print((topic, msg))
