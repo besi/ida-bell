@@ -29,7 +29,11 @@ mqtt_password = secrets.mqtt.password
 # TODO: Reduce the Keep alive time once #5 is implemented
 KEEPALIVE = 3 * 60 * 60 # 3 hours
 
+timer_active = False
+timer_delay = 0
+
 def sub_cb(topic, msg):
+    global timer_active, timer_delay
     # print((topic, msg))
     if topic == b'timer':
         import json
@@ -40,9 +44,8 @@ def sub_cb(topic, msg):
             title = timer_data['title']
             print(f"Start the timer '{title}' with {seconds} seconds")
 
-            time.sleep(seconds)
-            print("Ringing the bell")
-            stepper.step(FULL_ROTATION, clockwise)    
+            timer_active = True
+            timer_delay = seconds
         except KeyError as e:
             print("Ignoring badly formatted or unknown JSON")
             print(msg)
@@ -95,5 +98,11 @@ while True:
         print("ping")
         client.ping()
         last_ping = time.time()
+    
+    if timer_active:
+        timer_active = False
+        time.sleep(timer_delay)
+        print("Ringing the bell")
+        stepper.step(FULL_ROTATION, clockwise)    
 
     time.sleep(delay)
